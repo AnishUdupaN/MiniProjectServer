@@ -1,0 +1,11 @@
+[
+    {
+        "filename":"a.py","viewtype":"normal","expire":"none"
+    },
+    {
+        "filename":"b.jpeg","viewtype":"onetime","expire":"none"
+    },
+    {
+        "filename":"c.pdf","viewtype":"normal","expire":"1hr"
+    }
+]
