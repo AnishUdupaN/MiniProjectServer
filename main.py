@@ -10,33 +10,6 @@ import random
 import string
 from dotenv import load_dotenv
 
-def location_check(lat,long,alt):
-    #Function to check if the given location falls under the fixed one
-    print("Location:",lat,long,alt)
-    return True
-
-def sha_check(sha256):
-    #Function to check if the given hash matches to that of the original one.
-    # get the sha256 by using "keytool -list -v -keystore ~/Public/Public/Mini\ Project/keypasswordispassword.jks"
-    #look for sha256 hash and remove the ":" and convert it into lower case.
-    load_dotenv()
-    hash=os.getenv("HASH")
-    hash=(hash.replace(":","")).lower()
-    if hash==sha256:
-        return True
-    else:
-        return False
-
-
-def is_device_authorized(username: str, device_id: str) -> bool:
-    """Check if username and device_id match in deviceid.json."""
-    try:
-        with open("deviceid.json", "r") as f:
-            device_data = json.load(f)
-        return device_data.get(username) == device_id
-    except (FileNotFoundError, json.JSONDecodeError):
-        return False
-
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,6 +19,12 @@ app = FastAPI(title="File Server and Message Receiver")
 # Create static directory if it doesn't exist
 if not os.path.exists("static"):
     os.makedirs("static")
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 class Message(BaseModel):
     username: str
@@ -75,6 +54,55 @@ class GetFileRequest(BaseModel):
     username: str
     device_id: str
     filename: str
+
+
+def location_check(point):
+    #use https://www.map-tools.com/coordinates to get the coordinates of points of an polygon easily
+    with open("areamap.json", "r") as f:
+        a=json.load(f)
+        f.close()
+    polygon=[]
+    for i in a:
+        c=Point(float(i),float(a[i]))
+        polygon.append(c)
+    num_vertices = len(polygon)
+    x, y = point.x, point.y
+    inside = True
+
+    p1 = polygon[0]
+
+    for i in range(1, num_vertices + 1):
+        p2 = polygon[i % num_vertices]
+        if ((y<p1.y != y< p2.y) and x<(p2.x-p1.x)*(y-p1.y)/(p2.y-p1.y)+p1.x):
+            inside = not inside
+
+        p1 = p2
+
+    return inside
+
+def sha_check(sha256):
+    #Function to check if the given hash matches to that of the original one.
+    # get the sha256 by using "keytool -list -v -keystore ~/Public/Public/Mini\ Project/keypasswordispassword.jks"
+    #look for sha256 hash and remove the ":" and convert it into lower case.
+    load_dotenv()
+    hash=os.getenv("HASH")
+    hash=(hash.replace(":","")).lower()
+    if hash==sha256:
+        return True
+    else:
+        return False
+
+
+def is_device_authorized(username: str, device_id: str) -> bool:
+    """Check if username and device_id match in deviceid.json."""
+    try:
+        with open("deviceid.json", "r") as f:
+            device_data = json.load(f)
+        return device_data.get(username) == device_id
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+
+
 
 @app.get("/")
 async def root():
@@ -138,8 +166,9 @@ async def login(request: LoginRequest):
 
 @app.post("/checklocation")
 async def check_location(request: CheckRequest):
-    # For now, always true
-    if location_check(request.latitude,request.longitude,request.altitude):
+    # altitude is an additional information which has no use as of now
+    print("Location:",request.latitude,request.longitude,request.altitude)
+    if location_check(Point(float(request.latitude),float(request.longitude))):
         try:
             with open("deviceid.json", "r") as f:
                 device_data = json.load(f)
