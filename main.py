@@ -9,10 +9,7 @@ import uuid
 import random
 import string
 from dotenv import load_dotenv
-<<<<<<< HEAD
 from shapely.geometry import Point, Polygon
-=======
->>>>>>> d1c3a6bdd131b183f66ec685308373b5fd011365
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -25,13 +22,6 @@ if not os.path.exists("static"):
     os.makedirs("static")
 
 
-<<<<<<< HEAD
-=======
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
->>>>>>> d1c3a6bdd131b183f66ec685308373b5fd011365
 
 class Message(BaseModel):
     username: str
@@ -63,7 +53,6 @@ class GetFileRequest(BaseModel):
     filename: str
 
 
-<<<<<<< HEAD
 def location_check(latitude,longitude):
     #use https://www.map-tools.com/coordinates to get the coordinates of points of an polygon easily
     with open("areamap.json", "r") as f:
@@ -86,31 +75,6 @@ def location_check(latitude,longitude):
         return True
     else:
         return False
-=======
-def location_check(point):
-    #use https://www.map-tools.com/coordinates to get the coordinates of points of an polygon easily
-    with open("areamap.json", "r") as f:
-        a=json.load(f)
-        f.close()
-    polygon=[]
-    for i in a:
-        c=Point(float(i),float(a[i]))
-        polygon.append(c)
-    num_vertices = len(polygon)
-    x, y = point.x, point.y
-    inside = True
-
-    p1 = polygon[0]
-
-    for i in range(1, num_vertices + 1):
-        p2 = polygon[i % num_vertices]
-        if ((y<p1.y != y< p2.y) and x<(p2.x-p1.x)*(y-p1.y)/(p2.y-p1.y)+p1.x):
-            inside = not inside
-
-        p1 = p2
-
-    return inside
->>>>>>> d1c3a6bdd131b183f66ec685308373b5fd011365
 
 def sha_check(sha256):
     #Function to check if the given hash matches to that of the original one.
@@ -200,11 +164,7 @@ async def login(request: LoginRequest):
 async def check_location(request: CheckRequest):
     # altitude is an additional information which has no use as of now
     print("Location:",request.latitude,request.longitude,request.altitude)
-<<<<<<< HEAD
     if location_check(float(request.latitude),float(request.longitude)):
-=======
-    if location_check(Point(float(request.latitude),float(request.longitude))):
->>>>>>> d1c3a6bdd131b183f66ec685308373b5fd011365
         try:
             with open("deviceid.json", "r") as f:
                 device_data = json.load(f)
