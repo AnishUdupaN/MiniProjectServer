@@ -1,0 +1,24 @@
+move logout button to somewhere in the top right
+in the downside bottom page of faiourites, logout,etc, there should be only 2:
+    regular documents
+    view once documents
+
+when on mainactivity.kt, send an get request to the server:
+
+
+
+first, implement the location feature on security check page
+then, send an get request /listfiles to the server requesting for documents
+list all the "normal" files in the regular documents page
+list all the onetime files in the view once page
+
+
+for every 5 seconds, send an get message on / to get the json:
+    {
+    "message": "Server OK."
+    }
+    if we get any error,then display the error in red in the screen.
+    If the error is because it could not connect to the server, then display an popup saying it could not connect to server and display an button "Exit", which exits the app
+
+clicking on an filename should open it inside the app.
+as soon as the user exits the document view, send again an /listfiles to ensure that files deleted for user will not be displayed again
