@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
@@ -10,7 +11,7 @@ import random
 import string
 from dotenv import load_dotenv
 from shapely.geometry import Point, Polygon
-
+import aiofiles
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,19 +54,19 @@ class GetFileRequest(BaseModel):
     filename: str
 
 
-def location_check(latitude,longitude):
+async def location_check(latitude,longitude):
     #use https://www.map-tools.com/coordinates to get the coordinates of points of an polygon easily
-    with open("areamap.json", "r") as f:
-        poly_coords_dict=json.load(f)
-        f.close()
+    async with aiofiles.open("areamap.json", "r") as f:
+        content = await f.read()
+        poly_coords_dict = json.loads(content)
     polygon_vertices = []
     for lat_str, lon_str in poly_coords_dict.items():
         lon_float = float(lon_str)
         lat_float = float(lat_str)
         polygon_vertices.append((lon_float, lat_float)) # Append as (lon, lat)
-    
+
     test_point_tuple = (longitude,latitude) # Store as (lon, lat)
-    polygon = Polygon(polygon_vertices)    
+    polygon = Polygon(polygon_vertices)
     point = Point(test_point_tuple)
     is_inside = polygon.contains(point)
     touches_boundary = polygon.touches(point)
@@ -89,11 +90,12 @@ def sha_check(sha256):
         return False
 
 
-def is_device_authorized(username: str, device_id: str) -> bool:
+async def is_device_authorized(username: str, device_id: str) -> bool:
     """Check if username and device_id match in deviceid.json."""
     try:
-        with open("deviceid.json", "r") as f:
-            device_data = json.load(f)
+        async with aiofiles.open("deviceid.json", "r") as f:
+            content = await f.read()
+            device_data = json.loads(content)
         return device_data.get(username) == device_id
     except (FileNotFoundError, json.JSONDecodeError):
         return False
@@ -107,27 +109,29 @@ async def root():
 @app.post("/messages")
 async def receive_message(message: Message):
     # Check if username and device_id are authorized
-    if not is_device_authorized(message.username, message.device_id):
+    if not await is_device_authorized(message.username, message.device_id):
         # Remove the pair if it exists
         try:
-            with open("deviceid.json", "r") as f:
-                device_data = json.load(f)
+            async with aiofiles.open("deviceid.json", "r") as f:
+                content = await f.read()
+                device_data = json.loads(content)
             if message.username in device_data:
                 del device_data[message.username]
-                with open("deviceid.json", "w") as f:
-                    json.dump(device_data, f)
+                async with aiofiles.open("deviceid.json", "w") as f:
+                    await f.write(json.dumps(device_data))
         except (FileNotFoundError, json.JSONDecodeError):
             pass
         return JSONResponse(content={"username": message.username, "device_id": message.device_id, "Error": "Not Authorized", "Message": None})
     if (message.Error!="None"):
         #the client is reporting the device check failure status
         try:
-            with open("deviceid.json", "r") as f:
-                device_data = json.load(f)
+            async with aiofiles.open("deviceid.json", "r") as f:
+                content = await f.read()
+                device_data = json.loads(content)
             if message.username in device_data:
                 del device_data[message.username]
-                with open("deviceid.json", "w") as f:
-                    json.dump(device_data, f)
+                async with aiofiles.open("deviceid.json", "w") as f:
+                    await f.write(json.dumps(device_data))
         except (FileNotFoundError, json.JSONDecodeError):
             pass
         return JSONResponse(content={"username": message.username, "device_id": message.device_id, "Error": None, "Message": "Received the error '"+message.Error+"'"})
@@ -164,10 +168,11 @@ async def login(request: LoginRequest):
 async def check_location(request: CheckRequest):
     # altitude is an additional information which has no use as of now
     print("Location:",request.latitude,request.longitude,request.altitude)
-    if location_check(float(request.latitude),float(request.longitude)):
+    if await location_check(float(request.latitude),float(request.longitude)):
         try:
-            with open("deviceid.json", "r") as f:
-                device_data = json.load(f)
+            async with aiofiles.open("deviceid.json", "r") as f:
+                content = await f.read()
+                device_data = json.loads(content)
             device_id = device_data.get(request.username)
             if device_id:
                 return JSONResponse(content={"Error": None, "device_id": device_id})
@@ -178,12 +183,13 @@ async def check_location(request: CheckRequest):
     else:
         # Remove the pair if it exists (by username only)
         try:
-            with open("deviceid.json", "r") as f:
-                device_data = json.load(f)
+            async with aiofiles.open("deviceid.json", "r") as f:
+                content = await f.read()
+                device_data = json.loads(content)
             if request.username in device_data:
                 del device_data[request.username]
-                with open("deviceid.json", "w") as f:
-                    json.dump(device_data, f)
+                async with aiofiles.open("deviceid.json", "w") as f:
+                    await f.write(json.dumps(device_data))
         except (FileNotFoundError, json.JSONDecodeError):
             pass
         return JSONResponse(content={"Error": "Location Check Failed", "device_id": None})
@@ -196,12 +202,13 @@ async def check_sha(request: ShaRequest):
     else:
         # Remove the pair if it exists (by username only)
         try:
-            with open("deviceid.json", "r") as f:
-                device_data = json.load(f)
+            async with aiofiles.open("deviceid.json", "r") as f:
+                content = await f.read()
+                device_data = json.loads(content)
             if request.username in device_data:
                 del device_data[request.username]
-                with open("deviceid.json", "w") as f:
-                    json.dump(device_data, f)
+                async with aiofiles.open("deviceid.json", "w") as f:
+                    await f.write(json.dumps(device_data))
         except (FileNotFoundError, json.JSONDecodeError):
             pass
         return JSONResponse(content={"error": "Integrity Check Failed"})
@@ -216,12 +223,13 @@ async def check_sha(request: CheckFailed):
 @app.get("/listfiles")
 async def list_files(username: str, device_id: str):
     # Check if username and device_id are authorized
-    if not is_device_authorized(username, device_id):
+    if not await is_device_authorized(username, device_id):
         return JSONResponse(status_code=403, content={"error": "Not Permitted"})
 
     try:
-        with open("files.json", "r") as f:
-            files = json.load(f)
+        async with aiofiles.open("files.json", "r") as f:
+            content = await f.read()
+            files = json.loads(content)
         user_files = files.get(username, [])
         return JSONResponse(content=user_files)
     except FileNotFoundError:
@@ -232,12 +240,13 @@ async def list_files(username: str, device_id: str):
 @app.post("/getfile")
 async def get_file(request: GetFileRequest):
     # Check if username and device_id are authorized
-    if not is_device_authorized(request.username, request.device_id):
+    if not await is_device_authorized(request.username, request.device_id):
         return JSONResponse(status_code=403, content={"error": "Not Permitted"})
 
     try:
-        with open("files.json", "r") as f:
-            files = json.load(f)
+        async with aiofiles.open("files.json", "r") as f:
+            content = await f.read()
+            files = json.loads(content)
         user_files = files.get(request.username, [])
         file_entry = next((f for f in user_files if f["filename"] == request.filename), None)
         if not file_entry:
@@ -257,7 +266,7 @@ async def get_file(request: GetFileRequest):
     if file_entry["viewtype"] == "onetime":
         user_files.remove(file_entry)
         files[request.username] = user_files
-        with open("files.json", "w") as f:
-            json.dump(files, f)
+        async with aiofiles.open("files.json", "w") as f:
+            await f.write(json.dumps(files))
 
     return FileResponse(path=file_path, filename=request.filename, media_type='application/octet-stream')
