@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 {"user1": [{"filename": "a.py", "viewtype": "normal"},{"filename": "weblab.pdf", "viewtype": "normal"}], "user2": [{"filename": "a.py", "viewtype": "normal"}, {"filename": "b.jpeg", "viewtype": "onetime"}, {"filename": "c.pdf", "viewtype": "normal"}]}
-=======
-{"user1": [{"filename": "a.py", "viewtype": "normal"},{"filename": "b.jpeg", "viewtype": "onetime"}], "user2": [{"filename": "a.py", "viewtype": "normal"}, {"filename": "b.jpeg", "viewtype": "onetime"}, {"filename": "c.pdf", "viewtype": "normal"}]}
->>>>>>> d1c3a6bdd131b183f66ec685308373b5fd011365
