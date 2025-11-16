@@ -1,0 +1,12 @@
+2025-11-16 14:53:10,777 - INFO - User user1: Login attempt with password
+2025-11-16 14:53:10,777 - INFO - User user1: Login successful
+2025-11-16 14:53:13,741 - INFO - User user1: SHA check input - sha256: 6509937e037774b34777191faa22f728f47fbdc3d891d3c4e53c2d04b000b17d
+2025-11-16 14:53:13,742 - INFO - User user1: SHA check passed
+2025-11-16 14:53:13,765 - INFO - User user1: Location check input - lat: 12.9015275, lon: 77.5169557, alt: 767.8999633789062
+2025-11-16 14:53:13,767 - INFO - User user1: Location check passed
+2025-11-16 14:53:13,851 - INFO - User user1: List files request with device_id: KRrZCi
+2025-11-16 14:53:13,852 - INFO - User user1: Listed files successfully
+2025-11-16 14:53:16,415 - INFO - User user1: Get file request - device_id: KRrZCi, filename: a.py
+2025-11-16 14:53:16,417 - INFO - User user1: File requested successfully: a.py
+2025-11-16 14:53:18,445 - INFO - User user1: Get file request - device_id: KRrZCi, filename: weblab.pdf
+2025-11-16 14:53:18,446 - INFO - User user1: File requested successfully: weblab.pdf
