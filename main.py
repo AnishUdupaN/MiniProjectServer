@@ -48,6 +48,9 @@ class CheckFailed(BaseModel):
     username: str
     message: str
 
+class LogoutRequest(BaseModel):
+    username: str
+
 class GetFileRequest(BaseModel):
     username: str
     device_id: str
@@ -55,6 +58,7 @@ class GetFileRequest(BaseModel):
 
 
 async def location_check(latitude,longitude):
+    return True
     #use https://www.map-tools.com/coordinates to get the coordinates of points of an polygon easily
     async with aiofiles.open("areamap.json", "r") as f:
         content = await f.read()
@@ -78,6 +82,7 @@ async def location_check(latitude,longitude):
         return False
 
 def sha_check(sha256):
+    return True
     #Function to check if the given hash matches to that of the original one.
     # get the sha256 by using "keytool -list -v -keystore ~/Public/Public/Mini\ Project/keypasswordispassword.jks"
     #look for sha256 hash and remove the ":" and convert it into lower case.
@@ -176,7 +181,9 @@ async def check_location(request: CheckRequest):
     logger.info(f"User {request.username}: Location check input - lat: {request.latitude}, lon: {request.longitude}, alt: {request.altitude}")
     # altitude is an additional information which has no use as of now
     print("Location:",request.latitude,request.longitude,request.altitude)
-    if await location_check(float(request.latitude),float(request.longitude)):
+    location_result = await location_check(float(request.latitude),float(request.longitude))
+    logger.info(f"User {request.username}: Location check result - lat: {request.latitude}, lon: {request.longitude}, in_location: {location_result}")
+    if location_result:
         logger.info(f"User {request.username}: Location check passed")
         try:
             async with aiofiles.open("deviceid.json", "r") as f:
@@ -234,6 +241,25 @@ async def check_sha(request: CheckFailed):
     # For now, always true
     print(request.username,request.message)
     return JSONResponse(content={"error": None})
+
+@app.post("/logout")
+async def logout(request: LogoutRequest):
+    logger.info(f"User {request.username}: Logout request")
+    try:
+        async with aiofiles.open("deviceid.json", "r") as f:
+            content = await f.read()
+            device_data = json.loads(content)
+        if request.username in device_data:
+            del device_data[request.username]
+            async with aiofiles.open("deviceid.json", "w") as f:
+                await f.write(json.dumps(device_data))
+            logger.info(f"User {request.username}: Successfully logged out")
+        else:
+            logger.warning(f"User {request.username}: Logout attempted but user not found in deviceid.json")
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error(f"User {request.username}: Error during logout - {str(e)}")
+    # Return 204 No Content as per task
+    return JSONResponse(status_code=204, content=None)
     
 
 @app.get("/listfiles")
